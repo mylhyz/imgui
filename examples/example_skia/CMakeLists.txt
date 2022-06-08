@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(SKIA_INCLUDE_DIR "/Users/mylhyz/Google/skia")
+set(SKIA_SHARED_LIB "/Users/mylhyz/Google/skia/out/Release/libskia.so")
+
 # add the executable
 add_executable(examples_skia main.cpp
 # add imgui core
@@ -21,3 +24,5 @@ add_executable(examples_skia main.cpp
 )
 target_include_directories(examples_skia PUBLIC ../../)
 target_include_directories(examples_skia PUBLIC ../../backends/)
+target_include_directories(examples_skia PUBLIC ${SKIA_INCLUDE_DIR})
+target_link_libraries(examples_skia PUBLIC ${SKIA_SHARED_LIB})
