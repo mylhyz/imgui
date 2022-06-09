@@ -7,8 +7,7 @@
 #include "include/core/SkPathBuilder.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkVertices.h"
-
-#include "include/effects/SkGradientShader.h"
+#include "include/core/SkSwizzle.h"
 
 #include "imgui.h"
 
