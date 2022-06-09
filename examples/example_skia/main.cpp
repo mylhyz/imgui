@@ -20,11 +20,6 @@ int main(int, char**) {
   //初始化Platform/Renderer后端
   ImGui_Impl_Skia_Init();
 
-  // Build atlas
-  unsigned char* tex_pixels = NULL;
-  int tex_w, tex_h;
-  io.Fonts->GetTexDataAsRGBA32(&tex_pixels, &tex_w, &tex_h);
-
   for (int n = 0; n < 60; n++) {
     printf("NewFrame() Start %d\n", n);
     io.DisplaySize = ImVec2(1920, 1080);
