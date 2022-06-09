@@ -25,7 +25,7 @@ int main(int, char**) {
   int tex_w, tex_h;
   io.Fonts->GetTexDataAsRGBA32(&tex_pixels, &tex_w, &tex_h);
 
-  for (int n = 0; n < 60; n++) {
+  for (int n = 0; n < 3; n++) {
     printf("NewFrame() Start %d\n", n);
     io.DisplaySize = ImVec2(1920, 1080);
     io.DeltaTime = 1.0f / 60.0f;
@@ -44,7 +44,7 @@ int main(int, char**) {
     ImGui::Render();
 
     // 完成本帧上屏
-    ImGui_Impl_Skia_RenderDraw(ImGui::GetDrawData());
+    ImGui_Impl_Skia_RenderDrawData(ImGui::GetDrawData());
     printf("NewFrame() End %d\n", n);
   }
 

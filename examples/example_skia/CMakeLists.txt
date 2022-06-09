@@ -26,3 +26,8 @@ target_include_directories(examples_skia PUBLIC ../../)
 target_include_directories(examples_skia PUBLIC ../../backends/)
 target_include_directories(examples_skia PUBLIC ${SKIA_INCLUDE_DIR})
 target_link_libraries(examples_skia PUBLIC ${SKIA_SHARED_LIB})
+
+# add the executable
+add_executable(skia_main skia_main.cpp)
+target_include_directories(skia_main PUBLIC ${SKIA_INCLUDE_DIR})
+target_link_libraries(skia_main PUBLIC ${SKIA_SHARED_LIB})
