@@ -47,5 +47,7 @@ int main(int, char**) {
 
   printf("DestroyContext()\n");
   ImGui::DestroyContext();
+
+  ImGui_Impl_Skia_Destroy();
   return 0;
 }

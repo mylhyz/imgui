@@ -16,5 +16,6 @@
 void ImGui_Impl_Skia_Init();
 void ImGui_Impl_Skia_NewFrame();
 void ImGui_Impl_Skia_RenderDrawData(ImDrawData *draw_data);
+void ImGui_Impl_Skia_Destroy();
 
 #endif //__IMGUI_IMPL_SKIA_H__

@@ -13,27 +13,33 @@ static SkSurface *make_surface(int32_t w, int32_t h) {
   return result;
 }
 
-static int g_png_index = 0;
-
-void ImGui_Impl_Skia_Init() {
-  printf("ImGui_Impl_Skia_Init\n");
-  //初始化Font
-  ImGuiIO io = ImGui::GetIO();
-  ImFontAtlas atlas = *io.Fonts;
-  SkPaint fontPaint;
-  // Build atlas
-  unsigned char *tex_pixels = NULL;
-  int tex_w, tex_h;
-  io.Fonts->GetTexDataAsRGBA32(&tex_pixels, &tex_w, &tex_h);
-  SkImageInfo info = SkImageInfo::MakeA8(tex_w, tex_h);
-  SkPixmap pmap(info, tex_pixels, info.minRowBytes());
-  SkMatrix localMatrix = SkMatrix::Scale(1.0f / tex_w, 1.0f / tex_h);
+static void build_ImFontAtlas(ImFontAtlas &atlas, SkPaint &fontPaint) {
+  int w, h;
+  unsigned char *pixels;
+  atlas.GetTexDataAsAlpha8(&pixels, &w, &h);
+  SkImageInfo info = SkImageInfo::MakeA8(w, h);
+  SkPixmap pmap(info, pixels, info.minRowBytes());
+  SkMatrix localMatrix = SkMatrix::Scale(1.0f / w, 1.0f / h);
   auto fontImage = SkImage::MakeFromRaster(pmap, nullptr, nullptr);
   auto fontShader = fontImage->makeShader(
       SkSamplingOptions(SkFilterMode::kLinear), localMatrix);
   fontPaint.setShader(fontShader);
   fontPaint.setColor(SK_ColorWHITE);
   atlas.TexID = &fontPaint;
+}
+
+static int g_png_index = 0;
+static SkPaint *g_font_paint = nullptr;
+
+void ImGui_Impl_Skia_Init() {
+  printf("ImGui_Impl_Skia_Init\n");
+  g_font_paint = new SkPaint();
+  build_ImFontAtlas(*ImGui::GetIO().Fonts, *g_font_paint);
+}
+
+void ImGui_Impl_Skia_Destroy() {
+  delete g_font_paint;
+  printf("ImGui_Impl_Skia_Destroy\n");
 }
 void ImGui_Impl_Skia_NewFrame() { printf("ImGui_Impl_Skia_NewFrame\n"); }
 void ImGui_Impl_Skia_SetupRenderState() {
