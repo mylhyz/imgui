@@ -1,19 +1,40 @@
 #include "imgui_impl_skia.h"
 
-static SkSurface *make_surface(int32_t w, int32_t h) {
-  // 创建SkImageInfo
-  SkColorType ct = SkColorType::kRGBA_8888_SkColorType;
-  SkAlphaType at = SkAlphaType::kPremul_SkAlphaType;
-  SkImageInfo *info = new SkImageInfo(SkImageInfo::Make(w, h, ct, at));
-  //创建SkSurface
-  SkPixelGeometry geo = kUnknown_SkPixelGeometry;
-  SkSurfaceProps surfProps(0, geo);
-  SkSurface *result = SkSurface::MakeRaster(*info, &surfProps).release();
-  //将SkSurface指针返回
-  return result;
+// Data
+struct ImGui_Impl_Skia_Data {
+  SkPaint *FontTexturePaint;
+  ImGui_Impl_Skia_Data() { memset(this, 0, sizeof(*this)); }
+};
+
+static ImGui_Impl_Skia_Data *ImGui_Impl_Skia_CreateBackendData() {
+  return IM_NEW(ImGui_Impl_Skia_Data)();
+}
+static ImGui_Impl_Skia_Data *ImGui_Impl_Skia_GetBackendData() {
+  return (ImGui_Impl_Skia_Data *)ImGui::GetIO().BackendPlatformUserData;
+}
+static void ImGui_Impl_Skia_DestroyBackendData() {
+  IM_DELETE(ImGui_Impl_Skia_GetBackendData());
 }
 
-static void build_ImFontAtlas(ImFontAtlas &atlas, SkPaint &fontPaint) {
+static SkSurface *ImGui_Impl_Skia_CreateBackendSurface(int32_t w, int32_t h) {
+//   GrGLint buffer;
+//   GR_GL_CALL(fBackendContext.get(),
+//              GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
+
+//   GrGLFramebufferInfo fbInfo;
+//   fbInfo.fFBOID = buffer;
+//   fbInfo.fFormat = GR_GL_RGBA8;
+
+//   GrBackendRenderTarget backendRT(fWidth, fHeight, fSampleCount, fStencilBits,
+//                                   fbInfo);
+
+//   fSurface = SkSurface::MakeFromBackendRenderTarget(
+//       fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin,
+//       kRGBA_8888_SkColorType, fDisplayParams.fColorSpace,
+//       &fDisplayParams.fSurfaceProps);
+}
+
+static void build_ImFontAtlas(ImFontAtlas &atlas, SkPaint *fontPaint) {
   int w, h;
   unsigned char *pixels;
   atlas.GetTexDataAsAlpha8(&pixels, &w, &h);
@@ -23,9 +44,9 @@ static void build_ImFontAtlas(ImFontAtlas &atlas, SkPaint &fontPaint) {
   auto fontImage = SkImage::MakeFromRaster(pmap, nullptr, nullptr);
   auto fontShader = fontImage->makeShader(
       SkSamplingOptions(SkFilterMode::kLinear), localMatrix);
-  fontPaint.setShader(fontShader);
-  fontPaint.setColor(SK_ColorWHITE);
-  atlas.TexID = &fontPaint;
+  fontPaint->setShader(fontShader);
+  fontPaint->setColor(SK_ColorWHITE);
+  atlas.SetTexID(fontPaint);
 }
 
 static int g_png_index = 0;
@@ -33,12 +54,20 @@ static SkPaint *g_font_paint = nullptr;
 
 void ImGui_Impl_Skia_Init() {
   printf("ImGui_Impl_Skia_Init\n");
-  g_font_paint = new SkPaint();
-  build_ImFontAtlas(*ImGui::GetIO().Fonts, *g_font_paint);
+  ImGuiIO &io = ImGui::GetIO();
+  IM_ASSERT(io.BackendPlatformUserData == NULL &&
+            "Already initialized a platform backend!");
+  ImGui_Impl_Skia_Data *bd = ImGui_Impl_Skia_CreateBackendData();
+  io.BackendPlatformUserData = bd;
+  io.BackendPlatformName = io.BackendRendererName = "skia-cross-platform";
+  bd->FontTexturePaint = IM_NEW(SkPaint)();
+  build_ImFontAtlas(*ImGui::GetIO().Fonts, bd->FontTexturePaint);
 }
 
 void ImGui_Impl_Skia_Destroy() {
-  delete g_font_paint;
+  ImGui_Impl_Skia_Data *bd = ImGui_Impl_Skia_GetBackendData();
+  IM_DELETE(bd->FontTexturePaint);
+  ImGui_Impl_Skia_DestroyBackendData();
   printf("ImGui_Impl_Skia_Destroy\n");
 }
 void ImGui_Impl_Skia_NewFrame() { printf("ImGui_Impl_Skia_NewFrame\n"); }
