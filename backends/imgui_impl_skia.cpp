@@ -17,23 +17,6 @@ static void ImGui_Impl_Skia_DestroyBackendData() {
 }
 
 static SkSurface *ImGui_Impl_Skia_CreateBackendSurface(int32_t w, int32_t h) {
-  //   GrGLint buffer;
-  //   GR_GL_CALL(fBackendContext.get(),
-  //              GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
-
-  //   GrGLFramebufferInfo fbInfo;
-  //   fbInfo.fFBOID = buffer;
-  //   fbInfo.fFormat = GR_GL_RGBA8;
-
-  //   GrBackendRenderTarget backendRT(fWidth, fHeight, fSampleCount,
-  //   fStencilBits,
-  //                                   fbInfo);
-
-  //   fSurface = SkSurface::MakeFromBackendRenderTarget(
-  //       fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin,
-  //       kRGBA_8888_SkColorType, fDisplayParams.fColorSpace,
-  //       &fDisplayParams.fSurfaceProps);
-
   // 创建SkImageInfo
   SkColorType ct = SkColorType::kRGBA_8888_SkColorType;
   SkAlphaType at = SkAlphaType::kPremul_SkAlphaType;
@@ -41,24 +24,24 @@ static SkSurface *ImGui_Impl_Skia_CreateBackendSurface(int32_t w, int32_t h) {
   //创建SkSurface
   SkPixelGeometry geo = kUnknown_SkPixelGeometry;
   SkSurfaceProps surfProps(0, geo);
-  SkSurface *result = SkSurface::MakeRaster(*info, &surfProps).release();
+  SkSurface *surface = SkSurface::MakeRaster(*info, &surfProps).release();
   //将SkSurface指针返回
-  return result;
+  return surface;
 }
 
 static void build_ImFontAtlas(ImFontAtlas &atlas, SkPaint *fontPaint) {
   int w, h;
   unsigned char *pixels;
   atlas.GetTexDataAsAlpha8(&pixels, &w, &h);
-  //   SkImageInfo info = SkImageInfo::MakeA8(w, h);
-  //   SkPixmap pmap(info, pixels, info.minRowBytes());
-  //   SkMatrix localMatrix = SkMatrix::Scale(1.0f / w, 1.0f / h);
-  //   auto fontImage = SkImage::MakeFromRaster(pmap, nullptr, nullptr);
-  //   auto fontShader = fontImage->makeShader(
-  //       SkSamplingOptions(SkFilterMode::kLinear), localMatrix);
-  //   fontPaint->setShader(fontShader);
-  //   fontPaint->setColor(SK_ColorWHITE);
-  //   atlas.SetTexID(fontPaint);
+  SkImageInfo info = SkImageInfo::MakeA8(w, h);
+  SkPixmap pmap(info, pixels, info.minRowBytes());
+  SkMatrix localMatrix = SkMatrix::Scale(1.0f / w, 1.0f / h);
+  auto fontImage = SkImage::MakeFromRaster(pmap, nullptr, nullptr);
+  auto fontShader = fontImage->makeShader(
+      SkSamplingOptions(SkFilterMode::kLinear), localMatrix);
+  fontPaint->setShader(fontShader);
+  fontPaint->setColor(SK_ColorWHITE);
+  atlas.SetTexID(fontPaint);
 }
 
 static int g_png_index = 0;
@@ -149,12 +132,7 @@ void ImGui_Impl_Skia_RenderDrawData(ImDrawData *drawData) {
           canvas->translate(tl.fX, tl.fY);
           fSkiaWidgetFuncs[idIndex](canvas);
         } else {
-          SkPaint *paint = nullptr;
-          if (drawCmd->TextureId) {
-            paint = static_cast<SkPaint *>(drawCmd->TextureId);
-          } else {
-            paint = new SkPaint();
-          }
+          SkPaint *paint = static_cast<SkPaint *>(drawCmd->TextureId);
           SkASSERT(paint);
 
           canvas->clipRect(
@@ -165,8 +143,6 @@ void ImGui_Impl_Skia_RenderDrawData(ImDrawData *drawData) {
               pos.begin(), uv.begin(), color.begin(), drawCmd->ElemCount,
               drawList->IdxBuffer.begin() + indexOffset);
           canvas->drawVertices(vertices, SkBlendMode::kModulate, *paint);
-
-          delete paint;
         }
         indexOffset += drawCmd->ElemCount;
       }
