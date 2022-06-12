@@ -17,6 +17,8 @@ int main(int, char**) {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
 
+  io.IniFilename = nullptr;
+
   //初始化Platform/Renderer后端
   ImGui_Impl_Skia_Init();
 
