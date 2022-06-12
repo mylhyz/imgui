@@ -3,12 +3,12 @@ cmake_minimum_required(VERSION 3.10)
 # set the project name
 project(examples_skia)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(SKIA_INCLUDE_DIR "/Users/mylhyz/Google/skia")
-set(SKIA_SHARED_LIB "/Users/mylhyz/Google/skia/out/Release/libskia.so")
+set(SKIA_INCLUDE_DIR "/Users/mylhyz/works/skia_build/skia")
+set(SKIA_SHARED_LIB "/Users/mylhyz/works/skia_build/skia/out/Release_Shared/libskia.dylib")
 
 # add the executable
 add_executable(examples_skia main.cpp

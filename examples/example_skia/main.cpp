@@ -45,9 +45,9 @@ int main(int, char**) {
     printf("NewFrame() End %d\n", n);
   }
 
+  ImGui_Impl_Skia_Destroy();
+
   printf("DestroyContext()\n");
   ImGui::DestroyContext();
-
-  ImGui_Impl_Skia_Destroy();
   return 0;
 }
