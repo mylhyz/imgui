@@ -6,6 +6,7 @@
 
 #include "imgui.h"
 #include "imgui_impl_skia.h"
+#include "imgui_impl_osx.h"
 
 int main(int, char**) {
   // 创建绘图上下文
