@@ -44,9 +44,6 @@ static void build_ImFontAtlas(ImFontAtlas &atlas, SkPaint *fontPaint) {
   atlas.SetTexID(fontPaint);
 }
 
-static int g_png_index = 0;
-static SkPaint *g_font_paint = nullptr;
-
 void ImGui_Impl_Skia_Init() {
   ImGuiIO &io = ImGui::GetIO();
   IM_ASSERT(io.BackendPlatformUserData == NULL &&
@@ -54,6 +51,7 @@ void ImGui_Impl_Skia_Init() {
   ImGui_Impl_Skia_Data *bd = ImGui_Impl_Skia_CreateBackendData();
   io.BackendPlatformUserData = bd;
   io.BackendPlatformName = io.BackendRendererName = "skia-cross-platform";
+  // 构造Font纹理
   bd->FontTexturePaint = IM_NEW(SkPaint)();
   build_ImFontAtlas(*ImGui::GetIO().Fonts, bd->FontTexturePaint);
 }
@@ -67,8 +65,7 @@ void ImGui_Impl_Skia_NewFrame(float width, float height) {
   ImGuiIO &io = ImGui::GetIO();
   io.DisplaySize = ImVec2(width, height);
 }
-void ImGui_Impl_Skia_SetupRenderState() {
-}
+void ImGui_Impl_Skia_SetupRenderState() {}
 typedef std::function<void(SkCanvas *)> SkiaWidgetFunc;
 void ImGui_Impl_Skia_RenderDrawData(ImDrawData *drawData) {
 
@@ -149,16 +146,6 @@ void ImGui_Impl_Skia_RenderDrawData(ImDrawData *drawData) {
   }
 
   fSkiaWidgetFuncs.reset();
-  //导出图像数据
-  SkImage *image = surface->makeImageSnapshot().release();
-  SkData *data = image->encodeToData().release();
-  image->unref();
-  char path[256];
-  sprintf(path, "%d.png", g_png_index++);
-  FILE *f = fopen(path, "wb");
-  fwrite(data->data(), data->size(), 1, f);
-  fclose(f);
-  data->unref();
   //释放surface
   surface->unref();
 }
