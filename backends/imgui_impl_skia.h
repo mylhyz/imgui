@@ -11,6 +11,10 @@
 #include "include/core/SkSwizzle.h"
 #include "include/core/SkVertices.h"
 
+#include "include/gpu/GrContextOptions.h"
+#include "include/gpu/GrDirectContext.h"
+#include "include/gpu/gl/GrGLInterface.h"
+
 #include "imgui.h"
 
 void ImGui_Impl_Skia_Init();

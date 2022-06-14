@@ -1,4 +1,5 @@
 #import <Cocoa/Cocoa.h>
+#include <OpenGL/gl.h>
 
 #include "imgui.h"
 #include "imgui_impl_skia.h"
@@ -9,6 +10,16 @@
 
 @interface AppView : NSView {
   NSTimer* animationTimer;
+  NSOpenGLContext* fGLContext;
+  NSOpenGLPixelFormat* fPixelFormat;
+  sk_sp<GrDirectContext> fContext;
+  sk_sp<const GrGLInterface> fBackendContext;
+  sk_sp<SkSurface> fSurface;
+  GrContextOptions fGrContextOptions;
+  int fSampleCount;
+  int fStencilBits;
+  int fWidth;
+  int fHeight;
 }
 @end
 
@@ -106,6 +117,107 @@
 
 - (void)animationTimerFired:(NSTimer*)timer {
   [self setNeedsDisplay:YES];
+}
+
+- (void)initializeContext {
+  // 创建渲染上下文
+  SkASSERT(!fContext);
+
+  // 创建OpenGL上下文
+  if (!fGLContext) {
+    // set up pixel format
+    constexpr int kMaxAttributes = 19;
+    NSOpenGLPixelFormatAttribute attributes[kMaxAttributes];
+    int numAttributes = 0;
+    attributes[numAttributes++] = NSOpenGLPFAAccelerated;
+    attributes[numAttributes++] = NSOpenGLPFAClosestPolicy;
+    attributes[numAttributes++] = NSOpenGLPFADoubleBuffer;
+    attributes[numAttributes++] = NSOpenGLPFAOpenGLProfile;
+    attributes[numAttributes++] = NSOpenGLProfileVersion3_2Core;
+    attributes[numAttributes++] = NSOpenGLPFAColorSize;
+    attributes[numAttributes++] = 24;
+    attributes[numAttributes++] = NSOpenGLPFAAlphaSize;
+    attributes[numAttributes++] = 8;
+    attributes[numAttributes++] = NSOpenGLPFADepthSize;
+    attributes[numAttributes++] = 0;
+    attributes[numAttributes++] = NSOpenGLPFAStencilSize;
+    attributes[numAttributes++] = 8;
+    //    if (fDisplayParams.fMSAASampleCount > 1) {
+    //      attributes[numAttributes++] = NSOpenGLPFAMultisample;
+    //      attributes[numAttributes++] = NSOpenGLPFASampleBuffers;
+    //      attributes[numAttributes++] = 1;
+    //      attributes[numAttributes++] = NSOpenGLPFASamples;
+    //      attributes[numAttributes++] = fDisplayParams.fMSAASampleCount;
+    //    } else {
+    attributes[numAttributes++] = NSOpenGLPFASampleBuffers;
+    attributes[numAttributes++] = 0;
+    //    }
+    attributes[numAttributes++] = 0;
+    SkASSERT(numAttributes <= kMaxAttributes);
+
+    fPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+    if (nil == fPixelFormat) {
+      return nullptr;
+    }
+
+    // create context
+    fGLContext = [[NSOpenGLContext alloc] initWithFormat:fPixelFormat shareContext:nil];
+    if (nil == fGLContext) {
+      //      [fPixelFormat release];
+      //      fPixelFormat = nil;
+      return nullptr;
+    }
+
+    [self setWantsBestResolutionOpenGLSurface:YES];
+    [fGLContext setView:self];
+  }
+
+  //  GLint swapInterval = fDisplayParams.fDisableVsync ? 0 : 1;
+  GLint swapInterval = 1;
+  [fGLContext setValues:&swapInterval forParameter:NSOpenGLCPSwapInterval];
+
+  // make context current
+  [fGLContext makeCurrentContext];
+
+  glClearStencil(0);
+  glClearColor(0, 0, 0, 255);
+  glStencilMask(0xffffffff);
+  glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+  GLint stencilBits;
+  [fPixelFormat getValues:&stencilBits forAttribute:NSOpenGLPFAStencilSize forVirtualScreen:0];
+  fStencilBits = stencilBits;
+  GLint sampleCount;
+  [fPixelFormat getValues:&sampleCount forAttribute:NSOpenGLPFASamples forVirtualScreen:0];
+  fSampleCount = sampleCount;
+  fSampleCount = std::max(fSampleCount, 1);
+
+  CGFloat backingScaleFactor = 2;
+  fWidth = self.bounds.size.width * backingScaleFactor;
+  fHeight = self.bounds.size.height * backingScaleFactor;
+  glViewport(0, 0, fWidth, fHeight);
+
+  fBackendContext = GrGLMakeNativeInterface();
+
+  // 创建 GrDirectContext
+  fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
+}
+
+- (void)destroyContext {
+  // 销毁渲染上下文
+  fSurface.reset(nullptr);
+
+  if (fContext) {
+    // in case we have outstanding refs to this (lua?)
+    fContext->abandonContext();
+    fContext.reset();
+  }
+
+  fBackendContext.reset(nullptr);
+
+  if (fGLContext) {
+    [NSOpenGLContext clearCurrentContext];
+  }
 }
 
 @end
