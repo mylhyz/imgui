@@ -48,7 +48,6 @@ static int g_png_index = 0;
 static SkPaint *g_font_paint = nullptr;
 
 void ImGui_Impl_Skia_Init() {
-  printf("ImGui_Impl_Skia_Init\n");
   ImGuiIO &io = ImGui::GetIO();
   IM_ASSERT(io.BackendPlatformUserData == NULL &&
             "Already initialized a platform backend!");
@@ -63,15 +62,15 @@ void ImGui_Impl_Skia_Destroy() {
   ImGui_Impl_Skia_Data *bd = ImGui_Impl_Skia_GetBackendData();
   IM_DELETE(bd->FontTexturePaint);
   ImGui_Impl_Skia_DestroyBackendData();
-  printf("ImGui_Impl_Skia_Destroy\n");
 }
-void ImGui_Impl_Skia_NewFrame() { printf("ImGui_Impl_Skia_NewFrame\n"); }
+void ImGui_Impl_Skia_NewFrame(float width, float height) {
+  ImGuiIO &io = ImGui::GetIO();
+  io.DisplaySize = ImVec2(width, height);
+}
 void ImGui_Impl_Skia_SetupRenderState() {
-  printf("ImGui_Impl_Skia_SetupRenderState\n");
 }
 typedef std::function<void(SkCanvas *)> SkiaWidgetFunc;
 void ImGui_Impl_Skia_RenderDrawData(ImDrawData *drawData) {
-  printf("ImGui_Impl_Skia_RenderDrawData\n");
 
   int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
   int fb_height = (int)(drawData->DisplaySize.y * drawData->FramebufferScale.y);
