@@ -8,6 +8,26 @@
 @end
 
 @implementation AppView
+
+-(void) drawRect:(NSRect)dirtyRect {
+    //绘制
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        //TODO 初始化
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    //TODO 销毁
+}
+
+
 @end
 
 //-----------------------------------------------------------------------------------
