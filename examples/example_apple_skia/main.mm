@@ -84,7 +84,7 @@
   ImDrawData* draw_data = ImGui::GetDrawData();
 
   // 上屏
-  ImGui_Impl_Skia_RenderDrawData(draw_data);
+  ImGui_Impl_Skia_RenderDrawData(fSurface.get(),draw_data);
 
   // 触发View重绘
   if (!animationTimer)
@@ -201,6 +201,25 @@
 
   // 创建 GrDirectContext
   fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
+
+  //创建Surface
+  if (fContext) {
+    GrGLint buffer;
+    GR_GL_CALL(fBackendContext.get(), GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
+
+    GrGLFramebufferInfo fbInfo;
+    fbInfo.fFBOID = buffer;
+    fbInfo.fFormat = GR_GL_RGBA8;
+
+    GrBackendRenderTarget backendRT(fWidth, fHeight, fSampleCount, fStencilBits, fbInfo);
+
+    SkSurfaceProps fSurfaceProps(0, kRGB_H_SkPixelGeometry);
+    sk_sp<SkColorSpace> fColorSpace;
+
+    fSurface = SkSurface::MakeFromBackendRenderTarget(
+        fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType,
+        fColorSpace, &fSurfaceProps);
+  }
 }
 
 - (void)destroyContext {

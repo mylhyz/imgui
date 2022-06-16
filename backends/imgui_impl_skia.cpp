@@ -67,15 +67,12 @@ void ImGui_Impl_Skia_NewFrame(float width, float height) {
 }
 void ImGui_Impl_Skia_SetupRenderState() {}
 typedef std::function<void(SkCanvas *)> SkiaWidgetFunc;
-void ImGui_Impl_Skia_RenderDrawData(ImDrawData *drawData) {
+void ImGui_Impl_Skia_RenderDrawData(SkSurface *surface, ImDrawData *drawData) {
 
   int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
   int fb_height = (int)(drawData->DisplaySize.y * drawData->FramebufferScale.y);
   if (fb_width <= 0 || fb_height <= 0)
     return;
-
-  SkSurface *surface =
-      ImGui_Impl_Skia_CreateBackendSurface(fb_width, fb_height);
 
   SkTArray<SkiaWidgetFunc> fSkiaWidgetFuncs;
 
