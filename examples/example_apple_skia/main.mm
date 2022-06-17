@@ -84,7 +84,7 @@
   ImDrawData* draw_data = ImGui::GetDrawData();
 
   // 上屏
-  ImGui_Impl_Skia_RenderDrawData(fSurface.get(),draw_data);
+  ImGui_Impl_Skia_RenderDrawData(fSurface.get(), draw_data);
 
   // 触发View重绘
   if (!animationTimer)
@@ -98,6 +98,8 @@
 - (instancetype)initWithFrame:(NSRect)frame {
   self = [super initWithFrame:frame];
   if (self) {
+    //初始GL环境
+    [self initializeContext];
     //初始化 ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -113,6 +115,8 @@
   //销毁
   ImGui_Impl_Skia_Destroy();
   ImGui::DestroyContext();
+  //销毁GL环境
+  [self destroyContext];
 }
 
 - (void)animationTimerFired:(NSTimer*)timer {
@@ -217,8 +221,8 @@
     sk_sp<SkColorSpace> fColorSpace;
 
     fSurface = SkSurface::MakeFromBackendRenderTarget(
-        fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType,
-        fColorSpace, &fSurfaceProps);
+        fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, fColorSpace,
+        &fSurfaceProps);
   }
 }
 

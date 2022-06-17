@@ -61,12 +61,15 @@ void ImGui_Impl_Skia_Destroy() {
   IM_DELETE(bd->FontTexturePaint);
   ImGui_Impl_Skia_DestroyBackendData();
 }
+
 void ImGui_Impl_Skia_NewFrame(float width, float height) {
   ImGuiIO &io = ImGui::GetIO();
   io.DisplaySize = ImVec2(width, height);
 }
 void ImGui_Impl_Skia_SetupRenderState() {}
+
 typedef std::function<void(SkCanvas *)> SkiaWidgetFunc;
+
 void ImGui_Impl_Skia_RenderDrawData(SkSurface *surface, ImDrawData *drawData) {
 
   int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);

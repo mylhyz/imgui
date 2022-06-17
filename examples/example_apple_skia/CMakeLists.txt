@@ -29,11 +29,16 @@ add_executable(examples_apple_skia main.mm
 # add imgui backend impl
 ../../backends/imgui_impl_skia.cpp
 # add imgui osx and metal backend impl
-../../backends/imgui_impl_metal.mm
-../../backends/imgui_impl_osx.mm
+# ../../backends/imgui_impl_metal.mm
+# ../../backends/imgui_impl_osx.mm
 )
 target_compile_options(examples_apple_skia PRIVATE -ObjC++ -fobjc-weak -fobjc-arc)
-target_compile_definitions(examples_apple_skia PRIVATE -DTARGET_OS_OSX -DSK_GL)
+# 预定义宏的作用
+# SK_GL 用于提示Skia头文件，声明使用了GL编译
+# TARGET_OS_OSX 用于 imgui_impl_metal 中，声明是运行在MacOSX中
+# GR_GL_CHECK_ERROR=0 关闭GL命令检查
+# GR_GL_LOG_CALLS=0 关闭GL命令log
+target_compile_definitions(examples_apple_skia PRIVATE -DSK_GL -DGR_GL_CHECK_ERROR=0 -DGR_GL_LOG_CALLS=0)
 target_include_directories(examples_apple_skia PUBLIC ../../)
 target_include_directories(examples_apple_skia PUBLIC ../../backends/)
 target_include_directories(examples_apple_skia PUBLIC ${OPENGL_INCLUDE_DIR})
