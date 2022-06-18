@@ -17,7 +17,7 @@
 #include "include/gpu/gl/GrGLInterface.h"
 
 #include "src/gpu/gl/GrGLDefines.h"
-#include "src/gpu/gl/GrGLUtil.h"
+#include "src/gpu/ganesh/gl/GrGLUtil.h"
 
 #include "imgui.h"
 

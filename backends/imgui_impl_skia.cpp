@@ -146,6 +146,6 @@ void ImGui_Impl_Skia_RenderDrawData(SkSurface *surface, ImDrawData *drawData) {
   }
 
   fSkiaWidgetFuncs.reset();
-  //释放surface
-  surface->unref();
+
+  surface->flushAndSubmit();
 }

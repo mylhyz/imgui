@@ -86,6 +86,8 @@
   // 上屏
   ImGui_Impl_Skia_RenderDrawData([self getBackbufferSurface], draw_data);
 
+  [fGLContext flushBuffer];
+
   // 触发View重绘
   if (!animationTimer)
     animationTimer = [NSTimer scheduledTimerWithTimeInterval:0.017
