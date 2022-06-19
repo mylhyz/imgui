@@ -16,6 +16,8 @@
 
 @interface AppView : NSOpenGLView {
   NSTimer* animationTimer;
+  sk_sp<SkSurface> fSurface;
+  ImVec4 clear_color;
 }
 @end
 
@@ -23,6 +25,8 @@
 
 - (void)prepareOpenGL {
   [super prepareOpenGL];
+
+  clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 #ifndef DEBUG
   GLint swapInterval = 1;
@@ -79,7 +83,6 @@
   // Our state (make them static = more or less global) as a convenience to keep the example terse.
   static bool show_demo_window = true;
   static bool show_another_window = false;
-  static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can
   // browse its code to learn more about Dear ImGui!).
@@ -128,30 +131,12 @@
   ImGui::Render();
   ImDrawData* draw_data = ImGui::GetDrawData();
 
-  [[self openGLContext] makeCurrentContext];
   GLsizei width = (GLsizei)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
   GLsizei height = (GLsizei)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
   glViewport(0, 0, width, height);
   glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
                clear_color.z * clear_color.w, clear_color.w);
   glClear(GL_COLOR_BUFFER_BIT);
-
-  // Create Skia GPU Render
-  sk_sp<const GrGLInterface> fBackendContext = GrGLMakeNativeInterface();
-  GrContextOptions fGrContextOptions;
-  sk_sp<GrDirectContext> fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
-
-  GrGLint buffer;
-  GR_GL_CALL(fBackendContext.get(), GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
-  GrGLFramebufferInfo fbInfo;
-  fbInfo.fFBOID = buffer;
-  fbInfo.fFormat = GR_GL_RGBA8;
-  GrBackendRenderTarget backendRT(width, height, 1, 8, fbInfo);
-  SkSurfaceProps fSurfaceProps(0, kRGB_H_SkPixelGeometry);
-  sk_sp<SkColorSpace> fColorSpace;
-  sk_sp<SkSurface> fSurface =
-      SkSurface::MakeFromBackendRenderTarget(fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin,
-                                             kRGBA_8888_SkColorType, fColorSpace, &fSurfaceProps);
 
   ImGui_Impl_Skia_RenderDrawData(fSurface.get(), draw_data);
 
@@ -169,7 +154,28 @@
 - (void)reshape {
   [super reshape];
   [[self openGLContext] update];
-  [self updateAndDrawDemoView];
+
+  CGFloat backingScaleFactor =
+      self.window.screen.backingScaleFactor ?: NSScreen.mainScreen.backingScaleFactor;
+  CGFloat width = self.bounds.size.width * backingScaleFactor;
+  CGFloat height = self.bounds.size.height * backingScaleFactor;
+
+  // Create Skia GPU Render
+  sk_sp<const GrGLInterface> fBackendContext = GrGLMakeNativeInterface();
+  GrContextOptions fGrContextOptions;
+  sk_sp<GrDirectContext> fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
+
+  GrGLint buffer;
+  GR_GL_CALL(fBackendContext.get(), GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
+  GrGLFramebufferInfo fbInfo;
+  fbInfo.fFBOID = buffer;
+  fbInfo.fFormat = GR_GL_RGBA8;
+  GrBackendRenderTarget backendRT(width, height, 1, 8, fbInfo);
+  SkSurfaceProps fSurfaceProps(0, kRGB_H_SkPixelGeometry);
+  sk_sp<SkColorSpace> fColorSpace;
+  fSurface =
+      SkSurface::MakeFromBackendRenderTarget(fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin,
+                                             kRGBA_8888_SkColorType, fColorSpace, &fSurfaceProps);
 }
 - (void)drawRect:(NSRect)bounds {
   [self updateAndDrawDemoView];
