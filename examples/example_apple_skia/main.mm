@@ -20,6 +20,7 @@
   int fStencilBits;
   int fWidth;
   int fHeight;
+  NSTrackingArea* fTrackingArea;
 }
 @end
 
@@ -109,6 +110,8 @@
     io.IniFilename = nullptr;
     //初始化 Skia Backends
     ImGui_Impl_Skia_Init();
+    //添加TraceArea事件处理
+    [self updateTrackingAreas];
   }
   return self;
 }
@@ -119,6 +122,38 @@
   ImGui::DestroyContext();
   //销毁GL环境
   [self destroyContext];
+}
+
+- (void)updateTrackingAreas {
+  if (fTrackingArea != nil) {
+    [self removeTrackingArea:fTrackingArea];
+    //        [fTrackingArea release];
+  }
+
+  const NSTrackingAreaOptions options = NSTrackingMouseEnteredAndExited |
+                                        NSTrackingActiveInKeyWindow |
+                                        NSTrackingEnabledDuringMouseDrag | NSTrackingCursorUpdate |
+                                        NSTrackingInVisibleRect | NSTrackingAssumeInside;
+
+  fTrackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds]
+                                               options:options
+                                                 owner:self
+                                              userInfo:nil];
+
+  [self addTrackingArea:fTrackingArea];
+  [super updateTrackingAreas];
+}
+
+- (void)mouseMoved:(NSEvent*)event {
+  const NSPoint pos = [event locationInWindow];
+  const NSRect rect = [self frame];
+  CGFloat y = rect.size.height - pos.y;
+  CGFloat x = pos.x;
+  ImGuiIO& io = ImGui::GetIO();
+  io.MousePos.x = static_cast<float>(x);
+  io.MousePos.y = static_cast<float>(y);
+
+  io.Mouse
 }
 
 - (void)animationTimerFired:(NSTimer*)timer {
