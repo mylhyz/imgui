@@ -17,7 +17,6 @@
 @interface AppView : NSOpenGLView {
   NSTimer* animationTimer;
   sk_sp<SkSurface> fSurface;
-  ImVec4 clear_color;
 }
 @end
 
@@ -25,8 +24,6 @@
 
 - (void)prepareOpenGL {
   [super prepareOpenGL];
-
-  clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 #ifndef DEBUG
   GLint swapInterval = 1;
@@ -83,6 +80,7 @@
   // Our state (make them static = more or less global) as a convenience to keep the example terse.
   static bool show_demo_window = true;
   static bool show_another_window = false;
+  static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can
   // browse its code to learn more about Dear ImGui!).
@@ -210,7 +208,7 @@
 - (NSWindow*)window {
   if (_window != nil) return (_window);
 
-  NSRect viewRect = NSMakeRect(100.0, 100.0, 100.0 + 1280.0, 100 + 720.0);
+  NSRect viewRect = NSMakeRect(100.0, 100.0,  1280.0,  720.0);
 
   _window = [[NSWindow alloc]
       initWithContentRect:viewRect
