@@ -1,35 +1,79 @@
+// Dear ImGui: standalone example application for OSX + Skia, using legacy fixed pipeline
+// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of
+// imgui.cpp. Read online: https://github.com/ocornut/imgui/tree/master/docs
+
 #import <Cocoa/Cocoa.h>
-#include <OpenGL/gl.h>
+#import <OpenGL/gl.h>
+#import <OpenGL/glu.h>
 
 #include "imgui.h"
+#include "imgui_impl_osx.h"
 #include "imgui_impl_skia.h"
 
 //-----------------------------------------------------------------------------------
 // AppView
 //-----------------------------------------------------------------------------------
 
-@interface AppView : NSView {
+@interface AppView : NSOpenGLView {
   NSTimer* animationTimer;
-  NSOpenGLContext* fGLContext;
-  NSOpenGLPixelFormat* fPixelFormat;
-  sk_sp<GrDirectContext> fContext;
-  sk_sp<const GrGLInterface> fBackendContext;
-  sk_sp<SkSurface> fSurface;
-  GrContextOptions fGrContextOptions;
-  int fSampleCount;
-  int fStencilBits;
-  int fWidth;
-  int fHeight;
-  NSTrackingArea* fTrackingArea;
 }
 @end
 
 @implementation AppView
 
-- (void)drawRect:(NSRect)dirtyRect {
-  ImGui_Impl_Skia_NewFrame(dirtyRect.size.width, dirtyRect.size.height);
+- (void)prepareOpenGL {
+  [super prepareOpenGL];
 
-  // ImGui界面逻辑
+#ifndef DEBUG
+  GLint swapInterval = 1;
+  [[self openGLContext] setValues:&swapInterval forParameter:NSOpenGLCPSwapInterval];
+  if (swapInterval == 0) NSLog(@"Error: Cannot set swap interval.");
+#endif
+}
+
+- (void)initialize {
+  // Setup Dear ImGui context
+  // FIXME: This example doesn't have proper cleanup...
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO();
+  (void)io;
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsClassic();
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplOSX_Init(self);
+  ImGui_Impl_Skia_Init();
+
+  // Load Fonts
+  // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple
+  // fonts and use ImGui::PushFont()/PopFont() to select them.
+  // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the
+  // font among multiple.
+  // - If the file cannot be loaded, the function will return NULL. Please handle those errors in
+  // your application (e.g. use an assertion, or display an error and quit).
+  // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when
+  // calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+  // - Read 'docs/FONTS.txt' for more instructions and details.
+  // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to
+  // write a double backslash \\ !
+  // io.Fonts->AddFontDefault();
+  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+  // io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+  // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL,
+  // io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
+}
+
+- (void)updateAndDrawDemoView {
+  // Start the Dear ImGui frame
+  ImGui_Impl_Skia_NewFrame();
+  ImGui_ImplOSX_NewFrame(self);
   ImGui::NewFrame();
 
   // Our state (make them static = more or less global) as a convenience to keep the example terse.
@@ -84,12 +128,36 @@
   ImGui::Render();
   ImDrawData* draw_data = ImGui::GetDrawData();
 
-  // 上屏
-  ImGui_Impl_Skia_RenderDrawData([self getBackbufferSurface], draw_data);
+  [[self openGLContext] makeCurrentContext];
+  GLsizei width = (GLsizei)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+  GLsizei height = (GLsizei)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+  glViewport(0, 0, width, height);
+  glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
+               clear_color.z * clear_color.w, clear_color.w);
+  glClear(GL_COLOR_BUFFER_BIT);
 
-  [fGLContext flushBuffer];
+  // Create Skia GPU Render
+  sk_sp<const GrGLInterface> fBackendContext = GrGLMakeNativeInterface();
+  GrContextOptions fGrContextOptions;
+  sk_sp<GrDirectContext> fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
 
-  // 触发View重绘
+  GrGLint buffer;
+  GR_GL_CALL(fBackendContext.get(), GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
+  GrGLFramebufferInfo fbInfo;
+  fbInfo.fFBOID = buffer;
+  fbInfo.fFormat = GR_GL_RGBA8;
+  GrBackendRenderTarget backendRT(width, height, 1, 8, fbInfo);
+  SkSurfaceProps fSurfaceProps(0, kRGB_H_SkPixelGeometry);
+  sk_sp<SkColorSpace> fColorSpace;
+  sk_sp<SkSurface> fSurface =
+      SkSurface::MakeFromBackendRenderTarget(fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin,
+                                             kRGBA_8888_SkColorType, fColorSpace, &fSurfaceProps);
+
+  ImGui_Impl_Skia_RenderDrawData(fSurface.get(), draw_data);
+
+  // Present
+  [[self openGLContext] flushBuffer];
+
   if (!animationTimer)
     animationTimer = [NSTimer scheduledTimerWithTimeInterval:0.017
                                                       target:self
@@ -98,191 +166,22 @@
                                                      repeats:YES];
 }
 
-- (instancetype)initWithFrame:(NSRect)frame {
-  self = [super initWithFrame:frame];
-  if (self) {
-    //初始GL环境
-    [self initializeContext];
-    //初始化 ImGui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = nullptr;
-    //初始化 Skia Backends
-    ImGui_Impl_Skia_Init();
-    //添加TraceArea事件处理
-    [self updateTrackingAreas];
-  }
-  return self;
+- (void)reshape {
+  [super reshape];
+  [[self openGLContext] update];
+  [self updateAndDrawDemoView];
 }
-
-- (void)dealloc {
-  //销毁
-  ImGui_Impl_Skia_Destroy();
-  ImGui::DestroyContext();
-  //销毁GL环境
-  [self destroyContext];
+- (void)drawRect:(NSRect)bounds {
+  [self updateAndDrawDemoView];
 }
-
-- (void)updateTrackingAreas {
-  if (fTrackingArea != nil) {
-    [self removeTrackingArea:fTrackingArea];
-    //        [fTrackingArea release];
-  }
-
-  const NSTrackingAreaOptions options = NSTrackingMouseEnteredAndExited |
-                                        NSTrackingActiveInKeyWindow |
-                                        NSTrackingEnabledDuringMouseDrag | NSTrackingCursorUpdate |
-                                        NSTrackingInVisibleRect | NSTrackingAssumeInside;
-
-  fTrackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds]
-                                               options:options
-                                                 owner:self
-                                              userInfo:nil];
-
-  [self addTrackingArea:fTrackingArea];
-  [super updateTrackingAreas];
-}
-
-- (void)mouseMoved:(NSEvent*)event {
-  const NSPoint pos = [event locationInWindow];
-  const NSRect rect = [self frame];
-  CGFloat y = rect.size.height - pos.y;
-  CGFloat x = pos.x;
-  ImGuiIO& io = ImGui::GetIO();
-  io.MousePos.x = static_cast<float>(x);
-  io.MousePos.y = static_cast<float>(y);
-
-  io.Mouse
-}
-
 - (void)animationTimerFired:(NSTimer*)timer {
   [self setNeedsDisplay:YES];
 }
-
-- (void)initializeContext {
-  // 创建渲染上下文
-  SkASSERT(!fContext);
-
-  // 创建OpenGL上下文
-  if (!fGLContext) {
-    // set up pixel format
-    constexpr int kMaxAttributes = 19;
-    NSOpenGLPixelFormatAttribute attributes[kMaxAttributes];
-    int numAttributes = 0;
-    attributes[numAttributes++] = NSOpenGLPFAAccelerated;
-    attributes[numAttributes++] = NSOpenGLPFAClosestPolicy;
-    attributes[numAttributes++] = NSOpenGLPFADoubleBuffer;
-    attributes[numAttributes++] = NSOpenGLPFAOpenGLProfile;
-    attributes[numAttributes++] = NSOpenGLProfileVersion3_2Core;
-    attributes[numAttributes++] = NSOpenGLPFAColorSize;
-    attributes[numAttributes++] = 24;
-    attributes[numAttributes++] = NSOpenGLPFAAlphaSize;
-    attributes[numAttributes++] = 8;
-    attributes[numAttributes++] = NSOpenGLPFADepthSize;
-    attributes[numAttributes++] = 0;
-    attributes[numAttributes++] = NSOpenGLPFAStencilSize;
-    attributes[numAttributes++] = 8;
-    //    if (fDisplayParams.fMSAASampleCount > 1) {
-    //      attributes[numAttributes++] = NSOpenGLPFAMultisample;
-    //      attributes[numAttributes++] = NSOpenGLPFASampleBuffers;
-    //      attributes[numAttributes++] = 1;
-    //      attributes[numAttributes++] = NSOpenGLPFASamples;
-    //      attributes[numAttributes++] = fDisplayParams.fMSAASampleCount;
-    //    } else {
-    attributes[numAttributes++] = NSOpenGLPFASampleBuffers;
-    attributes[numAttributes++] = 0;
-    //    }
-    attributes[numAttributes++] = 0;
-    SkASSERT(numAttributes <= kMaxAttributes);
-
-    fPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-    if (nil == fPixelFormat) {
-      return nullptr;
-    }
-
-    // create context
-    fGLContext = [[NSOpenGLContext alloc] initWithFormat:fPixelFormat shareContext:nil];
-    if (nil == fGLContext) {
-      //      [fPixelFormat release];
-      //      fPixelFormat = nil;
-      return nullptr;
-    }
-
-    [self setWantsBestResolutionOpenGLSurface:YES];
-    [fGLContext setView:self];
-  }
-
-  //  GLint swapInterval = fDisplayParams.fDisableVsync ? 0 : 1;
-  GLint swapInterval = 1;
-  [fGLContext setValues:&swapInterval forParameter:NSOpenGLCPSwapInterval];
-
-  // make context current
-  [fGLContext makeCurrentContext];
-
-  glClearStencil(0);
-  glClearColor(0, 0, 0, 255);
-  glStencilMask(0xffffffff);
-  glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-  GLint stencilBits;
-  [fPixelFormat getValues:&stencilBits forAttribute:NSOpenGLPFAStencilSize forVirtualScreen:0];
-  fStencilBits = stencilBits;
-  GLint sampleCount;
-  [fPixelFormat getValues:&sampleCount forAttribute:NSOpenGLPFASamples forVirtualScreen:0];
-  fSampleCount = sampleCount;
-  fSampleCount = std::max(fSampleCount, 1);
-
-  CGFloat backingScaleFactor = 2;
-  fWidth = self.bounds.size.width * backingScaleFactor;
-  fHeight = self.bounds.size.height * backingScaleFactor;
-  glViewport(0, 0, fWidth, fHeight);
-
-  fBackendContext = GrGLMakeNativeInterface();
-
-  // 创建 GrDirectContext
-  fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
-}
-
-- (void)destroyContext {
-  // 销毁渲染上下文
-  fSurface.reset(nullptr);
-
-  if (fContext) {
-    // in case we have outstanding refs to this (lua?)
-    fContext->abandonContext();
-    fContext.reset();
-  }
-
-  fBackendContext.reset(nullptr);
-
-  if (fGLContext) {
-    [NSOpenGLContext clearCurrentContext];
-  }
-}
-
-- (SkSurface*)getBackbufferSurface {
-  if (nullptr == fSurface) {
-    //创建Surface
-    if (fContext) {
-      GrGLint buffer;
-      GR_GL_CALL(fBackendContext.get(), GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
-
-      GrGLFramebufferInfo fbInfo;
-      fbInfo.fFBOID = buffer;
-      fbInfo.fFormat = GR_GL_RGBA8;
-
-      GrBackendRenderTarget backendRT(fWidth, fHeight, fSampleCount, fStencilBits, fbInfo);
-
-      SkSurfaceProps fSurfaceProps(0, kRGB_H_SkPixelGeometry);
-      sk_sp<SkColorSpace> fColorSpace;
-
-      fSurface = SkSurface::MakeFromBackendRenderTarget(
-          fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType,
-          fColorSpace, &fSurfaceProps);
-    }
-  }
-  return fSurface.get();
+- (void)dealloc {
+  animationTimer = nil;
+  ImGui_Impl_Skia_Shutdown();
+  ImGui_ImplOSX_Shutdown();
+  ImGui::DestroyContext();
 }
 
 @end
@@ -353,9 +252,20 @@
   // Menu
   [self setupMenu];
 
-  // set content view
-  AppView* view = [[AppView alloc] initWithFrame:self.window.frame];
+  NSOpenGLPixelFormatAttribute attrs[] = {NSOpenGLPFADoubleBuffer, NSOpenGLPFADepthSize, 32, 0};
+
+  NSOpenGLPixelFormat* format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+  AppView* view = [[AppView alloc] initWithFrame:self.window.frame pixelFormat:format];
+  format = nil;
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
+  if (floor(NSAppKitVersionNumber) > NSAppKitVersionNumber10_6)
+    [view setWantsBestResolutionOpenGLSurface:YES];
+#endif  // MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
   [self.window setContentView:view];
+
+  if ([view openGLContext] == nil) NSLog(@"No OpenGL Context!");
+
+  [view initialize];
 }
 
 @end

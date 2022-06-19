@@ -28,9 +28,8 @@ add_executable(examples_apple_skia main.mm
 ../../imgui_demo.cpp
 # add imgui backend impl
 ../../backends/imgui_impl_skia.cpp
-# add imgui osx and metal backend impl
-# ../../backends/imgui_impl_metal.mm
-# ../../backends/imgui_impl_osx.mm
+# add imgui osx backend impl
+../../backends/imgui_impl_osx.mm
 )
 target_compile_options(examples_apple_skia PRIVATE -ObjC++ -fobjc-weak -fobjc-arc)
 # 预定义宏的作用

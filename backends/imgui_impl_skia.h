@@ -22,8 +22,8 @@
 #include "imgui.h"
 
 void ImGui_Impl_Skia_Init();
-void ImGui_Impl_Skia_NewFrame(float width, float height);
+void ImGui_Impl_Skia_NewFrame();
 void ImGui_Impl_Skia_RenderDrawData(SkSurface *surface, ImDrawData *draw_data);
-void ImGui_Impl_Skia_Destroy();
+void ImGui_Impl_Skia_Shutdown();
 
 #endif //__IMGUI_IMPL_SKIA_H__
