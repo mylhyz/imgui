@@ -577,8 +577,8 @@ void ImGui_ImplOSX_NewFrame(NSView* view)
     if (view)
     {
         const float dpi = (float)[view.window backingScaleFactor];
-        io.DisplaySize = ImVec2((float)view.bounds.size.width, (float)view.bounds.size.height);
-        io.DisplayFramebufferScale = ImVec2(dpi, dpi);
+        io.DisplaySize = ImVec2((float)view.bounds.size.width * dpi, (float)view.bounds.size.height * dpi);
+        // io.DisplayFramebufferScale = ImVec2(dpi, dpi);
     }
 
     // Setup time step
@@ -597,6 +597,8 @@ void ImGui_ImplOSX_NewFrame(NSView* view)
 static bool ImGui_ImplOSX_HandleEvent(NSEvent* event, NSView* view)
 {
     ImGuiIO& io = ImGui::GetIO();
+
+    CGFloat backingScaleFactor = view.window.screen.backingScaleFactor ?: NSScreen.mainScreen.backingScaleFactor;
 
     if (event.type == NSEventTypeLeftMouseDown || event.type == NSEventTypeRightMouseDown || event.type == NSEventTypeOtherMouseDown)
     {
@@ -619,7 +621,7 @@ static bool ImGui_ImplOSX_HandleEvent(NSEvent* event, NSView* view)
         NSPoint mousePoint = event.locationInWindow;
         mousePoint = [view convertPoint:mousePoint fromView:nil];
         mousePoint = NSMakePoint(mousePoint.x, view.bounds.size.height - mousePoint.y);
-        io.AddMousePosEvent((float)mousePoint.x, (float)mousePoint.y);
+        io.AddMousePosEvent((float)mousePoint.x * backingScaleFactor, (float)mousePoint.y * backingScaleFactor);
         return io.WantCaptureMouse;
     }
 
@@ -661,7 +663,7 @@ static bool ImGui_ImplOSX_HandleEvent(NSEvent* event, NSView* view)
             wheel_dy = [event deltaY];
         }
         if (wheel_dx != 0.0 || wheel_dy != 0.0)
-            io.AddMouseWheelEvent((float)wheel_dx * 0.1f, (float)wheel_dy * 0.1f);
+            io.AddMouseWheelEvent((float)wheel_dx * 0.1f * backingScaleFactor, (float)wheel_dy * 0.1f * backingScaleFactor);
 
         return io.WantCaptureMouse;
     }

@@ -48,7 +48,8 @@
 
   // Setup Platform/Renderer backends
   ImGui_ImplOSX_Init(self);
-  ImGui_Impl_Skia_Init();
+  ImGui_Impl_Skia_Init(self.window.screen.backingScaleFactor
+                           ?: NSScreen.mainScreen.backingScaleFactor);
 
   // Load Fonts
   // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple
@@ -158,6 +159,8 @@
   CGFloat width = self.bounds.size.width * backingScaleFactor;
   CGFloat height = self.bounds.size.height * backingScaleFactor;
 
+  ImGui::GetStyle().ScaleAllSizes(backingScaleFactor);
+
   // Create Skia GPU Render
   sk_sp<const GrGLInterface> fBackendContext = GrGLMakeNativeInterface();
   GrContextOptions fGrContextOptions;
@@ -168,9 +171,9 @@
   GrGLFramebufferInfo fbInfo;
   fbInfo.fFBOID = buffer;
   fbInfo.fFormat = GR_GL_RGBA8;
-  GrBackendRenderTarget backendRT(width, height, 1, 8, fbInfo);
-  SkSurfaceProps fSurfaceProps(0, kRGB_H_SkPixelGeometry);
-  sk_sp<SkColorSpace> fColorSpace;
+  GrBackendRenderTarget backendRT(width, height, 0, 0, fbInfo);
+  SkSurfaceProps fSurfaceProps(0, kUnknown_SkPixelGeometry);
+  sk_sp<SkColorSpace> fColorSpace = SkColorSpace::MakeSRGB();
   fSurface =
       SkSurface::MakeFromBackendRenderTarget(fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin,
                                              kRGBA_8888_SkColorType, fColorSpace, &fSurfaceProps);
@@ -208,7 +211,7 @@
 - (NSWindow*)window {
   if (_window != nil) return (_window);
 
-  NSRect viewRect = NSMakeRect(100.0, 100.0,  1280.0,  720.0);
+  NSRect viewRect = NSMakeRect(100.0, 100.0, 1280.0, 720.0);
 
   _window = [[NSWindow alloc]
       initWithContentRect:viewRect

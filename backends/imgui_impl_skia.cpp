@@ -31,7 +31,7 @@ static void build_ImFontAtlas(ImFontAtlas &atlas, SkPaint *fontPaint) {
   atlas.SetTexID(fontPaint);
 }
 
-void ImGui_Impl_Skia_Init() {
+void ImGui_Impl_Skia_Init(const float scaleFactor) {
   ImGuiIO &io = ImGui::GetIO();
   IM_ASSERT(io.BackendRendererUserData == NULL &&
             "Already initialized a platform backend!");
@@ -40,7 +40,12 @@ void ImGui_Impl_Skia_Init() {
   io.BackendRendererName = "imgui_impl_skia";
   // 构造Font纹理
   bd->FontTexturePaint = IM_NEW(SkPaint)();
-  build_ImFontAtlas(*ImGui::GetIO().Fonts, bd->FontTexturePaint);
+  ImFontAtlas &atlas = *ImGui::GetIO().Fonts;
+  atlas.Clear();
+  ImFontConfig cfg;
+  cfg.SizePixels = 13 * scaleFactor;
+  atlas.AddFontDefault(&cfg);
+  build_ImFontAtlas(atlas, bd->FontTexturePaint);
 }
 
 void ImGui_Impl_Skia_Shutdown() {
@@ -49,8 +54,7 @@ void ImGui_Impl_Skia_Shutdown() {
   ImGui_Impl_Skia_DestroyBackendData();
 }
 
-void ImGui_Impl_Skia_NewFrame() {
-}
+void ImGui_Impl_Skia_NewFrame() {}
 
 void ImGui_Impl_Skia_RenderDrawData(SkSurface *surface, ImDrawData *drawData) {
   // Then we fetch the most recent data, and convert it so we can render with
