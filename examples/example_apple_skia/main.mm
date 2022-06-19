@@ -44,7 +44,7 @@
   io.IniFilename = nullptr;
   CGFloat backingScaleFactor =
       self.window.screen.backingScaleFactor ?: NSScreen.mainScreen.backingScaleFactor;
-  ImGui::GetStyle().ScaleAllSizes(backingScaleFactor);
+  // ImGui::GetStyle().ScaleAllSizes(backingScaleFactor);
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 

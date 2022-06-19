@@ -43,7 +43,7 @@ void ImGui_Impl_Skia_Init(const float scaleFactor) {
   ImFontAtlas &atlas = *ImGui::GetIO().Fonts;
   atlas.Clear();
   ImFontConfig cfg;
-  cfg.SizePixels = 13 * scaleFactor;
+  cfg.SizePixels = 13 * 1;
   atlas.AddFontDefault(&cfg);
   build_ImFontAtlas(atlas, bd->FontTexturePaint);
 }
