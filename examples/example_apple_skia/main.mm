@@ -130,12 +130,8 @@
   ImGui::Render();
   ImDrawData* draw_data = ImGui::GetDrawData();
 
-  GLsizei width = (GLsizei)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
-  GLsizei height = (GLsizei)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
-  glViewport(0, 0, width, height);
-  glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w,
-               clear_color.z * clear_color.w, clear_color.w);
-  glClear(GL_COLOR_BUFFER_BIT);
+  fSurface->getCanvas()->clear(SkColorSetARGB(clear_color.z * 255, clear_color.x * 255,
+                                               clear_color.y * 255, clear_color.z * 255));
 
   ImGui_Impl_Skia_RenderDrawData(fSurface.get(), draw_data);
 
