@@ -17,6 +17,8 @@
 @interface AppView : NSOpenGLView {
   NSTimer* animationTimer;
   sk_sp<SkSurface> fSurface;
+  sk_sp<const GrGLInterface> fBackendContext;
+  sk_sp<GrDirectContext> fContext;
 }
 @end
 
@@ -39,6 +41,10 @@
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   (void)io;
+  io.IniFilename = nullptr;
+  CGFloat backingScaleFactor =
+      self.window.screen.backingScaleFactor ?: NSScreen.mainScreen.backingScaleFactor;
+  ImGui::GetStyle().ScaleAllSizes(backingScaleFactor);
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
@@ -129,9 +135,8 @@
   // Rendering
   ImGui::Render();
   ImDrawData* draw_data = ImGui::GetDrawData();
-
   fSurface->getCanvas()->clear(SkColorSetARGB(clear_color.z * 255, clear_color.x * 255,
-                                               clear_color.y * 255, clear_color.z * 255));
+                                              clear_color.y * 255, clear_color.z * 255));
 
   ImGui_Impl_Skia_RenderDrawData(fSurface.get(), draw_data);
 
@@ -149,18 +154,34 @@
 - (void)reshape {
   [super reshape];
   [[self openGLContext] update];
+  [self destroyContext];
+  [self initializeContext];
+}
+- (void)drawRect:(NSRect)bounds {
+  [self updateAndDrawDemoView];
+}
+- (void)animationTimerFired:(NSTimer*)timer {
+  [self setNeedsDisplay:YES];
+}
+- (void)dealloc {
+  animationTimer = nil;
+  ImGui_Impl_Skia_Shutdown();
+  ImGui_ImplOSX_Shutdown();
+  ImGui::DestroyContext();
+}
+
+- (void)initializeContext {
+  [[self openGLContext] makeCurrentContext];
 
   CGFloat backingScaleFactor =
       self.window.screen.backingScaleFactor ?: NSScreen.mainScreen.backingScaleFactor;
   CGFloat width = self.bounds.size.width * backingScaleFactor;
   CGFloat height = self.bounds.size.height * backingScaleFactor;
 
-  ImGui::GetStyle().ScaleAllSizes(backingScaleFactor);
-
   // Create Skia GPU Render
-  sk_sp<const GrGLInterface> fBackendContext = GrGLMakeNativeInterface();
+  fBackendContext = GrGLMakeNativeInterface();
   GrContextOptions fGrContextOptions;
-  sk_sp<GrDirectContext> fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
+  fContext = GrDirectContext::MakeGL(fBackendContext, fGrContextOptions);
 
   GrGLint buffer;
   GR_GL_CALL(fBackendContext.get(), GetIntegerv(GR_GL_FRAMEBUFFER_BINDING, &buffer));
@@ -174,17 +195,15 @@
       SkSurface::MakeFromBackendRenderTarget(fContext.get(), backendRT, kBottomLeft_GrSurfaceOrigin,
                                              kRGBA_8888_SkColorType, fColorSpace, &fSurfaceProps);
 }
-- (void)drawRect:(NSRect)bounds {
-  [self updateAndDrawDemoView];
-}
-- (void)animationTimerFired:(NSTimer*)timer {
-  [self setNeedsDisplay:YES];
-}
-- (void)dealloc {
-  animationTimer = nil;
-  ImGui_Impl_Skia_Shutdown();
-  ImGui_ImplOSX_Shutdown();
-  ImGui::DestroyContext();
+
+- (void)destroyContext {
+  fSurface.reset(nullptr);
+  if (fContext) {
+    // in case we have outstanding refs to this (lua?)
+    fContext->abandonContext();
+    fContext.reset();
+  }
+  fBackendContext.reset(nullptr);
 }
 
 @end
