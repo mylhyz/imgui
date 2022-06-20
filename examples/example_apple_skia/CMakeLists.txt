@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(SKIA_INCLUDE_DIR "/Users/mylhyz/Google/skia/")
-set(SKIA_LIB "/Users/mylhyz/Google/skia/out/Debug/libskia.a")
+set(SKIA_INCLUDE_DIR "/Users/mylhyz/Google/skia_build/skia")
+set(SKIA_LIB "/Users/mylhyz/Google/skia_build/skia/out/Debug/libskia.a")
 
 find_library(COCOA_LIBRARY Cocoa)
 find_library(METAL_LIBRARY Metal)

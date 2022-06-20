@@ -3,6 +3,7 @@
 // Data
 struct ImGui_Impl_Skia_Data {
   SkPaint *FontTexturePaint;
+  SkScalar Scalar;
   ImGui_Impl_Skia_Data() { memset(this, 0, sizeof(*this)); }
 };
 
@@ -36,6 +37,7 @@ void ImGui_Impl_Skia_Init(const float scaleFactor) {
   IM_ASSERT(io.BackendRendererUserData == NULL &&
             "Already initialized a platform backend!");
   ImGui_Impl_Skia_Data *bd = ImGui_Impl_Skia_CreateBackendData();
+  bd->Scalar = scaleFactor;
   io.BackendRendererUserData = bd;
   io.BackendRendererName = "imgui_impl_skia";
   // 构造Font纹理
@@ -63,6 +65,10 @@ void ImGui_Impl_Skia_RenderDrawData(SkSurface *surface, ImDrawData *drawData) {
   SkTDArray<SkPoint> uv;
   SkTDArray<SkColor> color;
   auto canvas = surface->getCanvas();
+
+  canvas->save();
+  ImGui_Impl_Skia_Data *bd = ImGui_Impl_Skia_GetBackendData();
+  canvas->scale(bd->Scalar, bd->Scalar);
 
   for (int i = 0; i < drawData->CmdListsCount; ++i) {
     const ImDrawList *drawList = drawData->CmdLists[i];
@@ -108,6 +114,8 @@ void ImGui_Impl_Skia_RenderDrawData(SkSurface *surface, ImDrawData *drawData) {
       }
     }
   }
+
+  canvas->restore();
 
   surface->flushAndSubmit();
 }

@@ -16,8 +16,8 @@
 #include "include/gpu/GrDirectContext.h"
 #include "include/gpu/gl/GrGLInterface.h"
 
-#include "src/gpu/gl/GrGLDefines.h"
 #include "src/gpu/ganesh/gl/GrGLUtil.h"
+#include "src/gpu/gl/GrGLDefines.h"
 
 #include "imgui.h"
 
